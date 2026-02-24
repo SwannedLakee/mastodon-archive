@@ -135,8 +135,7 @@ def media(args):
         for url, remoteurl, file_name in queue:
             if not args.quiet:
                 bar.next()
-            path = urlparse(url).path
-            dir_name =  os.path.dirname(file_name)
+            dir_name = os.path.dirname(file_name)
             try:
                 os.makedirs(dir_name, exist_ok = True)
                 if download(url, remoteurl, file_name, args):
