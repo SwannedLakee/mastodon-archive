@@ -14,6 +14,8 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 from mastodon import Mastodon
+from pathlib import Path
+from urllib.parse import urlparse
 import sys
 import os.path
 import datetime
@@ -330,6 +332,16 @@ def all_accounts():
                 if user not in users:
                     users.append("%s@%s" % m.group(2, 1))
         return users
+
+
+def media_file_name(media_dir: str, url: str) -> Path:
+    """
+    Derive the local file name for a given URL.
+    """
+    path = urlparse(url).path
+    file_name = Path(media_dir, path)
+    return file_name
+
 
 def keep(statuses, weeks):
     """

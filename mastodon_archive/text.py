@@ -87,12 +87,11 @@ def text(args):
         for attachment in status["media_attachments"]:
             # should we check attachment["preview_url"] as well?
             for url in [attachment["url"]]:
-                path = urlparse(url).path
-                file_name = media_dir + path
-                if os.path.isfile(file_name):
-                    str += "🖻 " + file_name + "\n"
+                file_name = core.media_file_name(media_dir, url)
+                if file_name.is_file():
+                    str += f"🖻 {file_name}\n"
                 elif url not in str:
-                    str += "🔗 " + url + "\n"
+                    str += f"🔗 {url}\n"
         str += "\n"
         # This forces UTF-8 independent of terminal capabilities, thus
         # avoiding problems with LC_CTYPE=C and other such issues.
