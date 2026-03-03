@@ -13,7 +13,10 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
+from hashlib import sha256
 from mastodon import Mastodon
+from pathlib import Path
+from urllib.parse import urlparse
 import sys
 import os.path
 import datetime
@@ -330,6 +333,58 @@ def all_accounts():
                 if user not in users:
                     users.append("%s@%s" % m.group(2, 1))
         return users
+
+
+def media_file_name(media_dir: str, url: str) -> Path:
+    """
+    Derive the local file name for a given URL.
+    """
+    urlParsed = urlparse(url)
+
+    # Check if a file with the old scheme still exists:
+    path = urlParsed.path
+    file_name = Path(media_dir, path)
+    if file_name.exists():
+        return file_name
+
+    # Since the old schema does not handle very long path elements, we now use this scheme:
+    dirname = os.path.dirname(urlParsed.path).lstrip("/")
+    basename = os.path.basename(urlParsed.path)
+    # sanitize for non-UNIX file systems, also avoid nested URLs:
+    dirname = sanitize_file_name(dirname)
+    basename = sanitize_file_name(basename)
+    dirname = shorten_file_name(dirname)
+    basename = shorten_file_name(basename)
+    file_name = Path(media_dir, dirname, basename)
+    return file_name
+
+
+def sanitize_file_name(file_name: str) -> str:
+    """
+    Catch some disallowed characters, including /.
+    https://stackoverflow.com/a/31976060/895727
+    """
+    return re.sub(r'[<>:"/\|?*]+', "-", file_name)
+
+
+def shorten_file_name(orig: str) -> str:
+    """
+    Shorten a file name to a portable length, ie. 255 bytes when encoded as UTF-8.
+    """
+    utf8 = orig.encode()
+    MAX_FILE_NAME_LENGTH = 255
+    if len(utf8) < MAX_FILE_NAME_LENGTH:
+        return orig
+    HASH_LENGTH = 10
+    hash = sha256(utf8).hexdigest()[:HASH_LENGTH]
+    PREFIX_SUFFIX_LENGTH = (MAX_FILE_NAME_LENGTH - HASH_LENGTH - 2) // 2
+    prefix_bytes = utf8[:PREFIX_SUFFIX_LENGTH]
+    suffix_bytes = utf8[-PREFIX_SUFFIX_LENGTH:]
+    prefix = prefix_bytes.decode(errors="ignore")
+    suffix = suffix_bytes.decode(errors="ignore")
+    file_name = f"{prefix}-{hash}-{suffix}"
+    return file_name
+
 
 def keep(statuses, weeks):
     """

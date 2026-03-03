@@ -19,6 +19,8 @@ import json
 import http.server
 import socketserver
 from progress.bar import Bar
+from pathlib import Path
+from typing import List, Dict
 from urllib.parse import urlparse, parse_qs
 from . import core
 
@@ -36,7 +38,7 @@ def meow(args):
     data = core.load(status_file, required=True, quiet=True, combine=args.combine)
 
     media_dir = domain + ".user." + username
-    media_files = []
+    media_files: List[str] = []
 
     def use_local_file_if_exists(url):
         """
@@ -48,11 +50,11 @@ def meow(args):
 
         nonlocal media_files
 
-        path = urlparse(url).path
+        file_name = core.media_file_name(media_dir, url)
+        path = "/" + str(file_name.relative_to(media_dir))
         if path in media_files:
             return path
 
-        file_name = media_dir + path
         if os.path.isfile(file_name):
             media_files.append(path)
             return path
@@ -94,8 +96,10 @@ def transform_media_urls(data, func):
     for picture in ["avatar", "header"]:
         data["account"][picture] = func(data["account"][picture])
 
-def serve(port, origin, data, media_dir, media_files, file_cb):
+
+def serve(port, origin, data, media_dir, media_files: List[str], file_cb):
     complete = False
+
     def not_completed():
         nonlocal complete
         return not complete

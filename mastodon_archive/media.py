@@ -108,14 +108,18 @@ def media(args):
     urls = list(urls.keys())
 
     if not args.quiet:
-        print("%d urls in your backup (%d are previews)" % (len(urls), preview_urls_count))
-
-    urls = ((url, remoteurl, media_dir + urlparse(url).path)
-            for url, remoteurl in urls)
-    urls = [(url, remoteurl, file_name)
-            for url, remoteurl, file_name in urls
-            if not os.path.isfile(file_name) and
-            not os.path.isfile(f"{file_name}.missing")]
+        print(
+            "%d urls in your backup (%d are previews)" % (len(urls), preview_urls_count)
+        )
+    urls = (
+        (url, remoteurl, core.media_file_name(media_dir, url))
+        for url, remoteurl in urls
+    )
+    urls = [
+        (url, remoteurl, file_name)
+        for url, remoteurl, file_name in urls
+        if not file_name.is_file() and not os.path.isfile(f"{file_name}.missing")
+    ]
 
     errors = 0
     retries = 5
@@ -135,10 +139,9 @@ def media(args):
         for url, remoteurl, file_name in queue:
             if not args.quiet:
                 bar.next()
-            path = urlparse(url).path
-            dir_name =  os.path.dirname(file_name)
+            dir_name = file_name.parent
             try:
-                os.makedirs(dir_name, exist_ok = True)
+                dir_name.mkdir(parents=True, exist_ok=True)
                 if download(url, remoteurl, file_name, args):
                     succeeded += 1
                 else:
