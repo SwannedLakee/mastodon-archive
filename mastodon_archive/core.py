@@ -348,7 +348,7 @@ def media_file_name(media_dir: str, url: str) -> Path:
         return file_name
 
     # Since the old schema does not handle very long path elements, we now use this scheme:
-    dirname = urlParsed.netloc + os.path.dirname(urlParsed.path)
+    dirname = os.path.dirname(urlParsed.path).lstrip("/")
     basename = os.path.basename(urlParsed.path)
     # sanitize for non-UNIX file systems, also avoid nested URLs:
     dirname = sanitize_file_name(dirname)
