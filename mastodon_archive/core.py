@@ -306,12 +306,10 @@ def save(file_name, data, quiet=False, backup=True):
                 ans = input(
                     "Backup: {} exists! Overwrite (yes/no)? ".format(backup_file)
                 )
-
-            if ans.lower()[0] == "y":
-                shutil.copy2(file_name, backup_file)
-            else:
+            if ans.lower()[0] == "n":
                 print("Exiting to avoid overwriting backup.", file=sys.stderr)
                 sys.exit(0)
+        shutil.copy2(file_name, backup_file)
 
     with open(file_name, mode = 'w', encoding = 'utf-8') as fp:
         data = json.dump(data, fp, indent = 2, default = date_handler)
