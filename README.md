@@ -838,34 +838,52 @@ Loading existing archive
 I have a shell script called `backup-mastodon` which does the following:
 
 ```sh
-#!/bin/sh
+#!/bin/bash
+set -e
+
 mkdir -p ~/Documents/Mastodon/
 cd ~/Documents/Mastodon/ || exit
 
-accounts="kensanata@octodon.social kensanata@dice.camp kensanata@tabletop.social"
+if test -z "$1"; then
+    echo Please provide an existing account, or use "'all'"
+    exit 1
+fi
 
-echo Archive Statuses, Favourites, Mentions
+accounts="$*"
+
+if test "$accounts" = "all"; then
+    accounts="kensanata@tabletop.social alex@rollenspiel.social alex@social.alexschroeder.ch"
+fi
+
 for acc in $accounts; do
     echo "$acc"
-    mastodon-archive archive --skip-bookmarks --with-mentions "$acc"
-done
+    sleep 3
 
-echo Expiring Statuses
-for acc in $accounts; do
-    echo "$acc"
-    mastodon-archive expire --older-than 8 --collection statuses --confirm "$acc"
-done
+    if [[ ! $acc =~ ^(.*)@(.*) ]]; then
+	echo "$acc" is not a an account
+	exit 1
+    fi
 
-echo Expiring Favourites
-for acc in $accounts; do
-    echo "$acc"
-    mastodon-archive expire --older-than 8 --collection favourites --confirm "$acc"
-done
+    username=${BASH_REMATCH[1]}
+    instance=${BASH_REMATCH[2]}
 
-echo Dismissing Notifications
-for acc in $accounts; do
-    echo "$acc"
-    mastodon-archive expire --older-than 8 --collection mentions --delete-other-notifications --confirm "$acc"
+    echo ① Archive Statuses, Favourites, Mentions
+    rm -f ${instance}.user.${username}.json~
+    mastodon-archive archive --no-version-check --with-mentions "$acc"
+
+    echo ② Dismissing Notifications
+    rm -f ${instance}.user.${username}.json~
+    mastodon-archive expire --no-version-check --older-than 26 --collection mentions --delete-other-notifications --confirm "$acc"
+
+    echo ③ Expiring Favourites
+    rm -f ${instance}.user.${username}.json~
+    mastodon-archive expire --no-version-check --older-than 26 --collection favourites --confirm "$acc"
+
+    # this is the slow one!
+    echo ④ Expiring Statuses
+    rm -f ${instance}.user.${username}.json~
+    mastodon-archive expire --no-version-check --older-than 8 --collection statuses --confirm "$acc"
+
 done
 ```
 
