@@ -346,8 +346,8 @@ def archive(args):
             print("Get notes (this may take a while)")
         all_ids = set()
         for coll in (followers, following, mutes, blocks):
-            for user in coll:
-                all_ids.add(user['id'])
+            for coll_user in coll:
+                all_ids.add(coll_user['id'])
         all_ids = list(all_ids)
         # If there are too many IDs the call may fail because the URI is too
         # long, so we use binary back-off to find a request size that works.
